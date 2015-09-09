@@ -42,13 +42,15 @@ namespace HotKey79
                 // check if we got a hot key pressed.
                 if (m.Msg == WM_HOTKEY)
                 {
-                    // get the keys.
+                    int id = m.WParam.ToInt32();
                     Keys key = (Keys)(((int)m.LParam >> 16) & 0xFFFF);
                     KeyModifiers modifier = (KeyModifiers)((int)m.LParam & 0xFFFF);
 
                     // invoke the event to notify the parent.
                     if (KeyPressed != null)
-                        KeyPressed(this, new KeyPressedEventArgs(modifier, key));
+                    {
+                        KeyPressed(this, new KeyPressedEventArgs(id, modifier, key));
+                    }
                 }
             }
 
@@ -64,16 +66,18 @@ namespace HotKey79
             #endregion
         }
 
-        private Window _window = new Window();
-        private int _currentId;
+        private Window window = new Window();
+        private int currentId = 0;
 
         public KeyboardHook()
         {
             // register the event of the inner native window.
-            _window.KeyPressed += delegate(object sender, KeyPressedEventArgs args)
+            window.KeyPressed += delegate(object sender, KeyPressedEventArgs args)
             {
                 if (KeyPressed != null)
+                {
                     KeyPressed(this, args);
+                }
             };
         }
 
@@ -82,16 +86,19 @@ namespace HotKey79
         /// </summary>
         /// <param name="modifier">The modifiers that are associated with the hot key.</param>
         /// <param name="key">The key itself that is associated with the hot key.</param>
-        public void RegisterHotKey(KeyModifiers modifier, Keys key)
+        /// <returns>Hot key ID</returns>
+        public int RegisterHotKey(KeyModifiers modifier, Keys key)
         {
             // increment the counter.
-            _currentId = _currentId + 1;
+            currentId = currentId + 1;
 
             // register the hot key.
-            if (!RegisterHotKey(_window.Handle, _currentId, (uint)modifier, (uint)key))
+            if (!RegisterHotKey(window.Handle, currentId, (uint)modifier, (uint)key))
             {
                 throw new InvalidOperationException("Couldn’t register the hot key.");
             }
+
+            return currentId;
         }
 
         /// <summary>
@@ -104,13 +111,13 @@ namespace HotKey79
         public void Dispose()
         {
             // unregister all the registered hot keys.
-            for (int i = _currentId; i > 0; i--)
+            for (int i = currentId; i > 0; i--)
             {
-                UnregisterHotKey(_window.Handle, i);
+                UnregisterHotKey(window.Handle, i);
             }
 
             // dispose the inner native window.
-            _window.Dispose();
+            window.Dispose();
         }
 
         #endregion
@@ -121,23 +128,30 @@ namespace HotKey79
     /// </summary>
     public class KeyPressedEventArgs : EventArgs
     {
-        private KeyModifiers _modifier;
-        private Keys _key;
+        private int id;
+        private KeyModifiers modifier;
+        private Keys key;
 
-        internal KeyPressedEventArgs(KeyModifiers modifier, Keys key)
+        internal KeyPressedEventArgs(int id, KeyModifiers modifier, Keys key)
         {
-            _modifier = modifier;
-            _key = key;
+            this.id = id;
+            this.modifier = modifier;
+            this.key = key;
+        }
+
+        public int Id
+        {
+            get { return id; }
         }
 
         public KeyModifiers Modifier
         {
-            get { return _modifier; }
+            get { return modifier; }
         }
 
         public Keys Key
         {
-            get { return _key; }
+            get { return key; }
         }
     }
 

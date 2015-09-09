@@ -23,7 +23,7 @@ Then run "hotkey79.exe". This utility has no icon on control form. If you want t
 
 HISTORY
 =======
-1.0.0 [2015-08-28] - First public version
+1.0.0 [2015-09-09] - First public version
 
 
 REQUIREMENTS

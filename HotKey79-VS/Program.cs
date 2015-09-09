@@ -16,11 +16,16 @@ namespace HotKey79
         /// Default configuration file name.
         /// </summary>
         private const string DEFAULT_CONFIGURATION_FILE = "hotkey79.conf";
-        
+
         /// <summary>
-        /// Keyboard hooks list.
+        /// Hot key commands.
         /// </summary>
-        List<KeyboardHook> keyboardHooks;
+        Dictionary<int, HotKey> commands;
+
+        /// <summary>
+        /// Keyboard hook.
+        /// </summary>
+        KeyboardHook keyboardHook;
 
         /// <summary>
         /// Mutex for only one instance testing.
@@ -82,16 +87,27 @@ namespace HotKey79
             }
             else
             {
-                keyboardHooks = new List<KeyboardHook>();
+                keyboardHook = new KeyboardHook();
+                keyboardHook.KeyPressed += new EventHandler<KeyPressedEventArgs>(KeyboardHookKeyPressed);
+
+                commands = new Dictionary<int, HotKey>();
 
                 foreach (HotKey hotkey in hotkeys)
                 {
-                    KeyboardHook keyboardHook = new KeyboardHook();
-
-                    keyboardHook.KeyPressed += new EventHandler<KeyPressedEventArgs>(hotkey.KeyboardHookKeyPressed);
-                    keyboardHook.RegisterHotKey(hotkey.GetModifiers(), hotkey.GetKey());
+                    int hotkeyId = keyboardHook.RegisterHotKey(hotkey.GetModifiers(), hotkey.GetKey());
+                    commands.Add(hotkeyId, hotkey);
                 }
             }
+        }
+
+        /// <summary>
+        /// Run command for hotkey.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public void KeyboardHookKeyPressed(object sender, KeyPressedEventArgs e)
+        {
+            commands[e.Id].KeyboardHookKeyPressed(sender, e);
         }
 
         /// <summary>
@@ -114,10 +130,7 @@ namespace HotKey79
         {
             if (isDisposing)
             {
-                foreach (KeyboardHook keyboardHook in keyboardHooks)
-                {
-                    keyboardHook.Dispose();
-                }
+                keyboardHook.Dispose();
             }
 
             base.Dispose(isDisposing);
